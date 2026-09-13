@@ -16,7 +16,7 @@ export const errorHandler = (error, request, response, next) => {
     message:
       statusCode === 500
         ? "Internal server error"
-        : statusCode === 409
+        : statusCode === 409 && error.code === 11000
           ? "A resource with these details already exists."
           : error.message,
     ...(process.env.NODE_ENV !== "production" && { stack: error.stack }),

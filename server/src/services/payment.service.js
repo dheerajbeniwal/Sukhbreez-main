@@ -279,10 +279,31 @@ export const receiveCash = async (providerId, bookingId) => {
   )
     throw conflict("Payment is already finalized.");
   if (existing?.paymentMethod === "cash") return paymentView(existing);
+  if (
+    existing &&
+    existing.paymentMethod === "online" &&
+    !existing.gatewayOrderId &&
+    !existing.gatewayPaymentId
+  ) {
+    existing.paymentMethod = "cash";
+    await existing.save();
+    return paymentView(existing);
+  }
   if (existing) throw conflict("An online payment has already been started.");
-  const payment = await ensurePayment(booking, "cash");
-  if (payment.paymentMethod !== "cash")
-    throw conflict("An online payment has already been started.");
+  let payment;
+  try {
+    payment = await ensurePayment(booking, "cash");
+  } catch (error) {
+    if (error.code !== 11000) throw error;
+    payment = await Payment.findOne({ bookingId });
+    if (!payment) throw error;
+  }
+  if (payment.paymentMethod !== "cash") {
+    if (payment.gatewayOrderId || payment.gatewayPaymentId)
+      throw conflict("An online payment has already been started.");
+    payment.paymentMethod = "cash";
+    await payment.save();
+  }
   if (
     payment.paymentStatus === "verified" ||
     payment.settlementStatus === "settled"

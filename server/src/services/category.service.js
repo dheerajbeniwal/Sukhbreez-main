@@ -31,6 +31,36 @@ const conflict = (message) => {
   return error;
 };
 
+const defaultCategories = [
+  ["Water Supplier", "water-supplier"],
+  ["Plumber", "plumber"],
+  ["Electrician", "electrician"],
+  ["Carpenter", "carpenter"],
+  ["Home Cleaner", "home-cleaner"],
+  ["AC Repair", "ac-repair"],
+  ["Painter", "painter"],
+  ["Appliance Repair", "appliance-repair"],
+];
+
+export const seedDefaultCategories = async () => {
+  await Promise.all(
+    defaultCategories.map(([name, slug]) =>
+      Category.updateOne(
+        { slug },
+        {
+          $setOnInsert: {
+            name,
+            slug,
+            description: `${name} home service`,
+            isActive: true,
+          },
+        },
+        { upsert: true },
+      ),
+    ),
+  );
+};
+
 export const toCategoryView = categoryView;
 
 export const createCategory = async (payload) => {
@@ -88,7 +118,7 @@ export const deleteCategory = async (id) => {
   const category = await Category.findById(id);
   if (!category) throw notFound();
   const [providerUse, bookingUse] = await Promise.all([
-    ProviderProfile.exists({ categoryId: id }),
+    ProviderProfile.exists({ categoryIds: id }),
     Booking.exists({ categoryId: id }),
   ]);
   if (providerUse || bookingUse)

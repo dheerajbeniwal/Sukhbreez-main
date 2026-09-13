@@ -13,17 +13,19 @@ const notFound = () => {
   return error;
 };
 
+const categoryView = (category) => ({
+  id: category._id.toString(),
+  name: category.name,
+  slug: category.slug,
+  icon: category.icon,
+  image: category.image,
+});
+
 const providerView = (profile) => ({
   id: profile.userId?._id?.toString() || profile.userId?.toString(),
   fullName: profile.userId?.fullName,
   profileImage: profile.userId?.profileImage,
-  category: profile.categoryId && {
-    id: profile.categoryId._id.toString(),
-    name: profile.categoryId.name,
-    slug: profile.categoryId.slug,
-    icon: profile.categoryId.icon,
-    image: profile.categoryId.image,
-  },
+  categories: (profile.categoryIds || []).map(categoryView),
   experience: profile.experience,
   bio: profile.bio,
   startingCharge: profile.startingCharge,
@@ -49,7 +51,7 @@ export const toAdminProviderView = adminProviderView;
 const populateProfile = (query) =>
   query
     .populate("userId", userProjection)
-    .populate("categoryId", categoryProjection);
+    .populate("categoryIds", categoryProjection);
 
 export const listProviders = async ({
   page,
@@ -80,6 +82,7 @@ export const listProviders = async ({
       approvalStatus: "approved",
       accountStatus: "active",
       availability: true,
+      startingCharge: { $gt: 0 },
     });
   if (admin && approvalStatus) filter.approvalStatus = approvalStatus;
   if (admin && accountStatus) filter.accountStatus = accountStatus;
@@ -87,10 +90,10 @@ export const listProviders = async ({
     const activeCategoryIds = await Category.find({ isActive: true }).distinct(
       "_id",
     );
-    filter.categoryId = categoryId
-      ? { $eq: categoryId, $in: activeCategoryIds }
-      : { $in: activeCategoryIds };
-  } else if (categoryId) filter.categoryId = categoryId;
+    filter.categoryIds = {
+      $in: categoryId ? [categoryId] : activeCategoryIds,
+    };
+  } else if (categoryId) filter.categoryIds = { $in: [categoryId] };
   if (admin && available !== undefined)
     filter.availability = available === "true";
   const [total, profiles] = await Promise.all([
@@ -103,7 +106,7 @@ export const listProviders = async ({
     ).lean(),
   ]);
   const visibleProfiles = profiles.filter(
-    (profile) => profile.userId && profile.categoryId,
+    (profile) => profile.userId && profile.categoryIds?.length,
   );
   return {
     providers: visibleProfiles.map(admin ? adminProviderView : providerView),
@@ -123,7 +126,7 @@ export const getPublicProvider = async (id) => {
   if (
     !profile?.userId ||
     profile.userId.accountStatus !== "active" ||
-    !profile.categoryId?.isActive
+    !profile.categoryIds?.some((category) => category.isActive)
   )
     throw notFound();
   return providerView(profile);
@@ -149,7 +152,7 @@ export const getOwnProfile = async (userId) => {
   return {
     user: profile.userId,
     profile: profile,
-    category: profile.categoryId,
+    categories: profile.categoryIds,
   };
 };
 
@@ -160,20 +163,29 @@ export const updateOwnProfile = async (userId, payload) => {
     error.statusCode = 404;
     throw error;
   }
-  const categoryId = payload.categoryId;
-  if (categoryId) {
-    const category = await Category.findOne({
-      _id: categoryId,
+  const categoryIds = payload.categoryIds;
+  if (categoryIds) {
+    const requestedCategoryIds = [...new Set(categoryIds.map((id) => id.toString()))];
+    const activeCategories = await Category.find({
+      _id: { $in: requestedCategoryIds },
       isActive: true,
-    });
-    if (!category) {
-      const error = new Error("Active category not found.");
+    }).select("_id");
+    const activeCategoryIds = new Set(
+      activeCategories.map((category) => category._id.toString()),
+    );
+    const invalidCategoryIds = requestedCategoryIds.filter(
+      (id) => !activeCategoryIds.has(id),
+    );
+    if (invalidCategoryIds.length) {
+      const error = new Error(
+        `Active categories not found: ${invalidCategoryIds.join(", ")}.`,
+      );
       error.statusCode = 404;
       throw error;
     }
-    profile.categoryId = categoryId;
+    profile.categoryIds = requestedCategoryIds;
   }
-  for (const field of ["experience", "address", "bio", "startingCharge"])
+  for (const field of ["experience", "address", "bio"])
     if (Object.hasOwn(payload, field))
       profile[field] =
         typeof payload[field] === "string"
@@ -241,16 +253,14 @@ export const updateAvailability = async (userId, availability) => {
 export const updateApproval = async (id, approvalStatus) => {
   const profile = await ProviderProfile.findOne({ userId: id });
   if (!profile) throw notFound();
-  if (approvalStatus === "approved" && Number(profile.startingCharge) <= 0) {
-    const error = new Error(
-      "Starting charge must be greater than zero before a provider can be approved.",
-    );
-    error.statusCode = 400;
-    throw error;
-  }
+  const availability =
+    approvalStatus === "approved" && Number(profile.startingCharge) > 0;
   const updated = await ProviderProfile.findOneAndUpdate(
     { userId: id },
-    { approvalStatus },
+    {
+      approvalStatus,
+      ...(approvalStatus === "approved" ? { availability } : { availability: false }),
+    },
     { new: true, runValidators: true },
   );
   if (!updated) throw notFound();
@@ -278,5 +288,18 @@ export const updateStatus = async (id, accountStatus) => {
   } finally {
     await session.endSession();
   }
+  return getAdminProvider(id);
+};
+
+export const updateStartingCharge = async (id, startingCharge) => {
+  const updated = await ProviderProfile.findOneAndUpdate(
+    { userId: id },
+    {
+      startingCharge,
+      ...(startingCharge > 0 ? { availability: true } : { availability: false }),
+    },
+    { new: true, runValidators: true },
+  );
+  if (!updated) throw notFound();
   return getAdminProvider(id);
 };

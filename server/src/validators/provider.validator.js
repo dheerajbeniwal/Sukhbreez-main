@@ -49,11 +49,10 @@ export const validateProviderUpdate = (request, response, next) => {
   const allowed = [
     "fullName",
     "profileImage",
-    "categoryId",
+    "categoryIds",
     "experience",
     "address",
     "bio",
-    "startingCharge",
   ];
   if (
     rejectUnexpected(request.body, allowed).length ||
@@ -65,13 +64,17 @@ export const validateProviderUpdate = (request, response, next) => {
         success: false,
         message: "Invalid provider profile update request.",
       });
-  if (
-    Object.hasOwn(request.body, "categoryId") &&
-    !mongoose.isValidObjectId(request.body.categoryId)
-  )
-    return response
-      .status(400)
-      .json({ success: false, message: "Invalid category ID." });
+  if (Object.hasOwn(request.body, "categoryIds")) {
+    if (
+      !Array.isArray(request.body.categoryIds) ||
+      request.body.categoryIds.length < 1 ||
+      request.body.categoryIds.some((id) => !mongoose.isValidObjectId(id))
+    )
+      return response.status(400).json({
+        success: false,
+        message: "At least one valid category ID is required.",
+      });
+  }
   if (
     Object.hasOwn(request.body, "experience") &&
     (!Number.isFinite(request.body.experience) ||
@@ -84,14 +87,6 @@ export const validateProviderUpdate = (request, response, next) => {
         success: false,
         message: "Experience must be between 0 and 80 years.",
       });
-  if (
-    Object.hasOwn(request.body, "startingCharge") &&
-    (!Number.isFinite(request.body.startingCharge) ||
-      request.body.startingCharge <= 0)
-  )
-    return response
-      .status(400)
-      .json({ success: false, message: "Starting charge must be greater than zero." });
   for (const field of ["fullName", "profileImage", "address", "bio"]) {
     if (
       Object.hasOwn(request.body, field) &&
@@ -152,5 +147,18 @@ export const validateProviderStatus = (request, response, next) => {
     return response
       .status(400)
       .json({ success: false, message: "Invalid provider account status." });
+  next();
+};
+
+export const validateStartingCharge = (request, response, next) => {
+  if (
+    Object.keys(request.body).length !== 1 ||
+    !Number.isFinite(request.body.startingCharge) ||
+    request.body.startingCharge <= 0
+  )
+    return response.status(400).json({
+      success: false,
+      message: "Starting charge must be greater than zero.",
+    });
   next();
 };

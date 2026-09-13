@@ -3,7 +3,6 @@ import "./App.css";
 import AppLayout from "./layouts/AppLayout.jsx";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import {
-  AdminPage,
   BookingsPage,
   CustomerDashboard,
   HomePage,
@@ -14,6 +13,7 @@ import {
   ProviderProfilePage,
   RegisterPage,
 } from "./pages/Pages.jsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 
 function App() {
   return (
@@ -36,7 +36,7 @@ function App() {
         </Route>
       </Route>
       <Route element={<ProtectedRoute roles={["admin"]} />}>
-        <Route element={<AppLayout />}><Route path="/admin" element={<AdminPage />} /></Route>
+        <Route element={<AppLayout />}><Route path="/admin/*" element={<AdminDashboard />} /></Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

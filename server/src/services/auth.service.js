@@ -6,6 +6,7 @@ import RefreshToken from "../models/RefreshToken.js";
 import User from "../models/User.js";
 import Category from "../models/Category.js";
 import { env } from "../config/env.js";
+import { notifyUser } from "./notification.service.js";
 
 const unauthorizedMessage = "Invalid mobile number or password.";
 const refreshCookie = "sukh_breeze_refresh";
@@ -91,12 +92,17 @@ export const registerProvider = async (payload) => {
     error.statusCode = 409;
     throw error;
   }
-  const category = await Category.findOne({
-    _id: payload.categoryId,
+  const categoryIds = [...new Set(payload.categoryIds.map((id) => id.toString()))];
+  const categories = await Category.find({
+    _id: { $in: categoryIds },
     isActive: true,
-  });
-  if (!category) {
-    const error = new Error("Active category not found.");
+  }).select("_id");
+  const activeCategoryIds = new Set(categories.map((category) => category._id.toString()));
+  const invalidCategoryIds = categoryIds.filter((id) => !activeCategoryIds.has(id));
+  if (invalidCategoryIds.length) {
+    const error = new Error(
+      `Active categories not found: ${invalidCategoryIds.join(", ")}.`,
+    );
     error.statusCode = 404;
     throw error;
   }
@@ -110,7 +116,7 @@ export const registerProvider = async (payload) => {
   try {
     await ProviderProfile.create({
       userId: user._id,
-      categoryId: payload.categoryId,
+      categoryIds,
       experience: payload.experience,
       address: payload.address,
       approvalStatus: "pending",
@@ -119,6 +125,17 @@ export const registerProvider = async (payload) => {
     await User.deleteOne({ _id: user._id });
     throw error;
   }
+  const admins = await User.find({ role: "admin", accountStatus: "active" }).select("_id").lean();
+  await Promise.all(
+    admins.map((admin) =>
+      notifyUser(admin._id, {
+        type: "provider_application",
+        title: "New provider application",
+        message: `${user.fullName} has submitted a provider application for approval.`,
+        dedupeKey: `provider_application:${user._id}:${admin._id}`,
+      }),
+    ),
+  );
   return user;
 };
 

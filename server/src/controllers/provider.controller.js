@@ -99,3 +99,15 @@ export const updateStatus = async (request, response) => {
     data: { provider },
   });
 };
+
+export const updateStartingCharge = async (request, response) => {
+  const provider = await providerService.updateStartingCharge(
+    request.params.id,
+    request.body.startingCharge,
+  );
+  response.json({
+    success: true,
+    message: "Provider starting charge updated successfully.",
+    data: { provider },
+  });
+};

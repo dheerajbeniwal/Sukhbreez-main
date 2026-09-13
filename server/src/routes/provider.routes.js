@@ -7,6 +7,7 @@ import {
   validateAvailability,
   validateProviderId,
   validateProviderStatus,
+  validateStartingCharge,
   validateProviderUpdate,
 } from "../validators/provider.validator.js";
 
@@ -59,6 +60,13 @@ providerRouter.patch(
   validateProviderId,
   validateProviderStatus,
   providerController.updateStatus,
+);
+providerRouter.patch(
+  "/admin/:id/starting-charge",
+  ...adminOnly,
+  validateProviderId,
+  validateStartingCharge,
+  providerController.updateStartingCharge,
 );
 providerRouter.get(
   "/:id",

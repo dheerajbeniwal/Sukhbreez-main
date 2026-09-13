@@ -19,6 +19,7 @@ const notificationSchema = new mongoose.Schema(
         "booking_cancelled",
         "payment_updated",
         "review_received",
+        "provider_application",
         "system",
       ],
       required: true,

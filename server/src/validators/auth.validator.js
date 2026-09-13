@@ -43,12 +43,16 @@ export const validateCustomerRegistration = (request, response, next) => {
 
 export const validateProviderRegistration = (request, response, next) => {
   const errors = validateBaseRegistration(request.body, [
-    "categoryId",
+    "categoryIds",
     "experience",
     "address",
   ]);
-  if (!mongoose.isValidObjectId(request.body.categoryId))
-    errors.categoryId = "A valid categoryId is required.";
+  if (
+    !Array.isArray(request.body.categoryIds) ||
+    request.body.categoryIds.length < 1 ||
+    request.body.categoryIds.some((id) => !mongoose.isValidObjectId(id))
+  )
+    errors.categoryIds = "At least one valid category ID is required.";
   if (
     !Number.isFinite(request.body.experience) ||
     request.body.experience < 0 ||
@@ -63,7 +67,7 @@ export const validateProviderRegistration = (request, response, next) => {
     "email",
     "password",
     "confirmPassword",
-    "categoryId",
+    "categoryIds",
     "experience",
     "address",
   ]);

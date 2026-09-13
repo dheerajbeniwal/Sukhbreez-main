@@ -39,7 +39,7 @@ export function PasswordField({ label, value, onChange, required = true, minLeng
 export function ProviderCard({ provider }) {
   return <article className="provider-card">
     <div className="avatar">{provider.fullName?.slice(0, 1) || "P"}</div>
-    <div className="provider-card-main"><div className="card-kicker">{provider.category?.name || "Home service"}</div><h3>{provider.fullName}</h3><p>{provider.experience || 0} years experience</p></div>
+    <div className="provider-card-main"><div className="card-kicker">{provider.categories?.map((category) => category.name).join(", ") || "Home service"}</div><h3>{provider.fullName}</h3><p>{provider.experience || 0} years experience</p></div>
     <div className="provider-price"><strong><Money value={provider.startingCharge} /></strong><span>{Number(provider.ratingAverage || 0).toFixed(1)} rating</span><Link className="text-link" to={`/providers/${provider.id}`}>View profile</Link></div>
   </article>;
 }

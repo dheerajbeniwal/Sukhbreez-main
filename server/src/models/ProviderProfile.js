@@ -8,10 +8,18 @@ const providerProfileSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    categoryId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
+    categoryIds: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Category",
+        },
+      ],
       required: true,
+      validate: {
+        validator: (value) => Array.isArray(value) && value.length > 0,
+        message: "At least one category is required.",
+      },
       index: true,
     },
     experience: { type: Number, required: true, min: 0, max: 80 },

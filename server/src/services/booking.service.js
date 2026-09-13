@@ -133,7 +133,7 @@ const verifyProvider = async (
   if (!user) throw notFound("Provider not found.");
   const profile = await ProviderProfile.findOne({
     userId: providerId,
-    categoryId,
+    categoryIds: categoryId,
     approvalStatus: "approved",
     accountStatus: "active",
   });
@@ -142,10 +142,20 @@ const verifyProvider = async (
   return { user, profile };
 };
 
-const generateBookingId = () => {
+const generateBookingId = async () => {
   const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-  const sequence = Math.floor(100000 + Math.random() * 900000);
-  return `SB-${date}-${sequence}`;
+  const counter = await mongoose.connection
+    .collection("bookingCounters")
+    .findOneAndUpdate(
+      { _id: `booking:${date}` },
+      { $inc: { sequence: 1 } },
+      { upsert: true, returnDocument: "after" },
+    );
+  const sequence = counter.value?.sequence ?? counter.sequence;
+  if (!Number.isInteger(sequence) || sequence > 999999) {
+    throw conflict("Daily booking ID limit reached.");
+  }
+  return `SB-${date}-${String(sequence).padStart(6, "0")}`;
 };
 
 export const createBooking = async (customerId, payload) => {
@@ -170,7 +180,7 @@ export const createBooking = async (customerId, payload) => {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const booking = await Booking.create({
-        bookingId: generateBookingId(),
+        bookingId: await generateBookingId(),
         customerId,
         providerId: payload.providerId,
         categoryId: payload.categoryId,

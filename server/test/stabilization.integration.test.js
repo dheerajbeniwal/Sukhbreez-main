@@ -25,7 +25,7 @@ const password = "StabTest!234";
 const results = [];
 const ids = {
   users: [],
-  category: null,
+  categories: [],
   bookings: [],
   payments: [],
   reviews: [],
@@ -62,6 +62,7 @@ describe("SUKH BREEZE database-backed stabilization", () => {
   let providerId;
   let adminId;
   let categoryId;
+  let secondCategoryId;
   let bookingId;
   let cashBookingId;
   let webhookBookingId;
@@ -159,7 +160,8 @@ describe("SUKH BREEZE database-backed stabilization", () => {
           User.deleteMany({ _id: { $in: userIds } }),
         ]);
       }
-      if (ids.category) await Category.deleteOne({ _id: ids.category });
+      if (ids.categories.length)
+        await Category.deleteMany({ _id: { $in: ids.categories } });
     } finally {
       if (server) await new Promise((resolve) => server.close(resolve));
       await mongoose.disconnect();
@@ -182,8 +184,15 @@ describe("SUKH BREEZE database-backed stabilization", () => {
       description: "Temporary stabilization category",
       isActive: true,
     });
-    ids.category = category._id;
+    const secondCategory = await Category.create({
+      name: `${marker}-electrical`,
+      slug: `${marker}-electrical`,
+      description: "Temporary second stabilization category",
+      isActive: true,
+    });
+    ids.categories.push(category._id, secondCategory._id);
     categoryId = category._id.toString();
+    secondCategoryId = secondCategory._id.toString();
 
     const customerMobile = `91${stamp}`;
     const otherMobile = `92${stamp}`;
@@ -222,7 +231,7 @@ describe("SUKH BREEZE database-backed stabilization", () => {
         mobile: providerMobile,
         password,
         confirmPassword: password,
-        categoryId,
+        categoryIds: [categoryId, secondCategoryId],
         experience: 4,
         address: "Provider test address",
       },
@@ -266,6 +275,23 @@ describe("SUKH BREEZE database-backed stabilization", () => {
     record("POST /api/v1/auth/login (customer)", customerLogin.status, customerLogin.body);
     assert.equal(customerLogin.status, 200);
     customerToken = customerLogin.body.data.accessToken;
+
+    for (const selectedCategoryId of [categoryId, secondCategoryId]) {
+      const providers = await request(
+        "GET",
+        `/api/v1/providers?categoryId=${selectedCategoryId}`,
+        { token: customerToken },
+      );
+      record(
+        `GET /api/v1/providers?categoryId=${selectedCategoryId}`,
+        providers.status,
+        providers.body,
+      );
+      assert.equal(providers.status, 200);
+      assert.ok(
+        providers.body.data.providers.some((provider) => provider.id === providerId),
+      );
+    }
 
     const otherLogin = await request("POST", "/api/v1/auth/login", {
       body: { mobile: otherMobile, password },

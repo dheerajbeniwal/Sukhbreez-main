@@ -14,14 +14,16 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     setUnauthorizedHandler(() => setUser(null));
-    const token = localStorage.getItem("sukh_breeze_access_token");
-    if (!token) {
-      setLoading(false);
-      return undefined;
-    }
-    api.get("/auth/me")
+    api.post("/auth/refresh")
+      .then(({ data }) => {
+        setAccessToken(data.data.accessToken);
+        return api.get("/auth/me");
+      })
       .then(({ data }) => setUser(data.data.user))
-      .catch(() => setAccessToken(null))
+      .catch(() => {
+        setAccessToken(null);
+        setUser(null);
+      })
       .finally(() => setLoading(false));
     return () => setUnauthorizedHandler(() => {});
   }, []);
@@ -57,4 +59,3 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
-

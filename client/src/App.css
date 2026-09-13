@@ -88,6 +88,11 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 .filter { border: 1px solid var(--line); border-radius: 30px; padding: 9px 14px; color: var(--muted); background: transparent; }
 .filter.active, .filter:hover { background: var(--ink); border-color: var(--ink); color: white; }
 .provider-list, .booking-list, .notification-list, .work-list { display: grid; gap: 12px; }
+.notification-toast { position: fixed; z-index: 20; top: 96px; right: 24px; width: min(390px, calc(100vw - 32px)); display: grid; gap: 14px; padding: 18px; background: var(--panel); border: 1px solid var(--green); box-shadow: 0 18px 50px rgba(33, 59, 48, .2); animation: toast-in .25s ease-out; }
+.notification-toast strong { display: block; margin: 7px 0 4px; }
+.notification-toast p { margin: 0; font-size: .88rem; }
+.notification-toast-actions { display: flex; gap: 8px; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 .provider-card, .booking-card, .notification, .work-card, .profile-panel, .detail-intro, .booking-form { background: var(--panel); border: 1px solid var(--line); box-shadow: 0 10px 32px rgba(33, 59, 48, .035); }
 .provider-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; padding: 20px; }
 .avatar { width: 48px; height: 48px; display: grid; place-items: center; background: var(--sage); color: var(--green); font-size: 1.2rem; font-weight: 800; }

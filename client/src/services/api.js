@@ -6,14 +6,12 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-let accessToken = localStorage.getItem("sukh_breeze_access_token");
+let accessToken = null;
 let refreshPromise = null;
 let onUnauthorized = () => {};
 
 export const setAccessToken = (token) => {
   accessToken = token;
-  if (token) localStorage.setItem("sukh_breeze_access_token", token);
-  else localStorage.removeItem("sukh_breeze_access_token");
 };
 
 export const setUnauthorizedHandler = (handler) => {
@@ -29,7 +27,12 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-    if (error.response?.status !== 401 || original?._retry || original?.url?.endsWith("/auth/refresh")) {
+    const requestUrl = original?.url || "";
+    const isAuthRequest =
+      requestUrl.endsWith("/auth/login") ||
+      requestUrl.endsWith("/auth/admin/login") ||
+      requestUrl.endsWith("/auth/refresh");
+    if (error.response?.status !== 401 || original?._retry || isAuthRequest) {
       return Promise.reject(error);
     }
     original._retry = true;
