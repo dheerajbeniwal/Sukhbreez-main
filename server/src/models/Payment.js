@@ -89,4 +89,7 @@ const paymentSchema = new mongoose.Schema(
   { timestamps: true, strict: true },
 );
 
+paymentSchema.index({ providerId: 1, paymentStatus: 1 });
+paymentSchema.index({ customerId: 1, paymentStatus: 1 });
+
 export default mongoose.model("Payment", paymentSchema);

@@ -77,9 +77,23 @@ export const createCategory = async (payload) => {
   });
 };
 
-export const listCategories = async (includeInactive = false) => {
+export const listCategories = async (
+  includeInactive = false,
+  { page = 1, limit = 50 } = {},
+) => {
   const filter = includeInactive ? {} : { isActive: true };
-  return Category.find(filter).sort({ name: 1 }).lean();
+  const [total, categories] = await Promise.all([
+    Category.countDocuments(filter),
+    Category.find(filter)
+      .sort({ name: 1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+  ]);
+  return {
+    categories,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
 };
 
 export const updateCategory = async (id, payload) => {

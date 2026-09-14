@@ -34,6 +34,10 @@ export const env = {
   port: Number(process.env.PORT) || 5000,
   clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
   mongodbUri: process.env.MONGODB_URI || "",
+  mongodbMaxPoolSize: Number(process.env.MONGODB_MAX_POOL_SIZE) || 50,
+  disableRateLimit:
+    process.env.NODE_ENV !== "production" &&
+    process.env.DISABLE_RATE_LIMIT === "true",
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET || developmentAccessSecret,
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || developmentRefreshSecret,
   jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",

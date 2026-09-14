@@ -2,6 +2,24 @@ import mongoose from "mongoose";
 
 const allowedFields = ["name", "description", "icon", "image"];
 
+export const validateCategoryPagination = (request, response, next) => {
+  const page = request.query.page === undefined ? 1 : Number(request.query.page);
+  const limit = request.query.limit === undefined ? 50 : Number(request.query.limit);
+  if (
+    !Number.isInteger(page) ||
+    page < 1 ||
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > 100
+  )
+    return response.status(400).json({
+      success: false,
+      message: "page must be at least 1 and limit must be between 1 and 100.",
+    });
+  request.pagination = { page, limit };
+  next();
+};
+
 const rejectUnexpected = (body, fields) =>
   Object.keys(body).filter((key) => !fields.includes(key));
 

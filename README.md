@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Sukh Breeze
 
 Sukh Breeze is a production-oriented local service marketplace foundation. Customers will be able to hire providers, providers will manage jobs, and administrators will operate the platform.
@@ -45,3 +46,6 @@ Available endpoints are documented in [docs/authentication.md](docs/authenticati
 Payment, commission, and manual settlement endpoints are documented in [docs/payment-api.md](docs/payment-api.md). Booking, reviews, notifications, and frontend business UI remain separate modules.
 
 Review and in-app notification endpoints are documented in [docs/review-api.md](docs/review-api.md) and [docs/notification-api.md](docs/notification-api.md). Reviews require completed customer-owned bookings; notifications are server-created and ownership-scoped.
+=======
+# Sukhbreez-main
+>>>>>>> 96fe19e6f995d82260bfc1214ccbd1ea2ddc94d4

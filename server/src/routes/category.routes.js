@@ -4,6 +4,7 @@ import { authenticate, authorize } from "../middleware/auth.middleware.js";
 import {
   validateCategoryCreate,
   validateCategoryId,
+  validateCategoryPagination,
   validateCategoryStatus,
   validateCategoryUpdate,
 } from "../validators/category.validator.js";
@@ -11,8 +12,13 @@ import {
 const categoryRouter = Router();
 const adminOnly = [authenticate, authorize("admin")];
 
-categoryRouter.get("/", categoryController.listPublic);
-categoryRouter.get("/admin", ...adminOnly, categoryController.listAdmin);
+categoryRouter.get("/", validateCategoryPagination, categoryController.listPublic);
+categoryRouter.get(
+  "/admin",
+  ...adminOnly,
+  validateCategoryPagination,
+  categoryController.listAdmin,
+);
 categoryRouter.post(
   "/",
   ...adminOnly,

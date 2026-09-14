@@ -39,15 +39,17 @@ app.use(
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(cookieParser());
 app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 100,
-    skipSuccessfulRequests: true,
-    standardHeaders: "draft-8",
-    legacyHeaders: false,
-  }),
-);
+if (!env.disableRateLimit) {
+  app.use(
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: 100,
+      skipSuccessfulRequests: true,
+      standardHeaders: "draft-8",
+      legacyHeaders: false,
+    }),
+  );
+}
 app.use("/uploads", express.static(uploadsDirectory));
 
 app.use("/api/health", healthRouter);

@@ -15,20 +15,26 @@ export const create = async (request, response) => {
 };
 
 export const listPublic = async (request, response) => {
-  const categories = await categoryService.listCategories();
+  const data = await categoryService.listCategories(false, request.pagination);
   response.json({
     success: true,
     message: "Categories fetched successfully.",
-    data: { categories: listResponse(categories) },
+    data: {
+      categories: listResponse(data.categories),
+      pagination: data.pagination,
+    },
   });
 };
 
 export const listAdmin = async (request, response) => {
-  const categories = await categoryService.listCategories(true);
+  const data = await categoryService.listCategories(true, request.pagination);
   response.json({
     success: true,
     message: "Categories fetched successfully.",
-    data: { categories: listResponse(categories) },
+    data: {
+      categories: listResponse(data.categories),
+      pagination: data.pagination,
+    },
   });
 };
 

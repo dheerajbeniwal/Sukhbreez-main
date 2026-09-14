@@ -9,6 +9,8 @@ export const connectDatabase = async () => {
     return;
   }
 
-  await mongoose.connect(env.mongodbUri);
+  await mongoose.connect(env.mongodbUri, {
+    maxPoolSize: env.mongodbMaxPoolSize,
+  });
   console.log("MongoDB connected");
 };

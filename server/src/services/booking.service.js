@@ -125,18 +125,20 @@ const verifyProvider = async (
   categoryId,
   requireAvailability = false,
 ) => {
-  const user = await User.findOne({
-    _id: providerId,
-    role: "provider",
-    accountStatus: "active",
-  });
+  const [user, profile] = await Promise.all([
+    User.findOne({
+      _id: providerId,
+      role: "provider",
+      accountStatus: "active",
+    }),
+    ProviderProfile.findOne({
+      userId: providerId,
+      categoryIds: categoryId,
+      approvalStatus: "approved",
+      accountStatus: "active",
+    }),
+  ]);
   if (!user) throw notFound("Provider not found.");
-  const profile = await ProviderProfile.findOne({
-    userId: providerId,
-    categoryIds: categoryId,
-    approvalStatus: "approved",
-    accountStatus: "active",
-  });
   if (!user || !profile || (requireAvailability && !profile.availability))
     throw conflict("Selected provider is not eligible for this booking.");
   return { user, profile };
@@ -159,22 +161,21 @@ const generateBookingId = async () => {
 };
 
 export const createBooking = async (customerId, payload) => {
-  const customer = await User.findOne({
-    _id: customerId,
-    role: "customer",
-    accountStatus: "active",
-  });
+  const [customer, category, providerResult] = await Promise.all([
+    User.findOne({
+      _id: customerId,
+      role: "customer",
+      accountStatus: "active",
+    }),
+    Category.findOne({
+      _id: payload.categoryId,
+      isActive: true,
+    }),
+    verifyProvider(payload.providerId, payload.categoryId, true),
+  ]);
   if (!customer) throw conflict("Customer account is not active.");
-  const category = await Category.findOne({
-    _id: payload.categoryId,
-    isActive: true,
-  });
   if (!category) throw notFound("Active category not found.");
-  const { profile: providerProfile } = await verifyProvider(
-    payload.providerId,
-    payload.categoryId,
-    true,
-  );
+  const { profile: providerProfile } = providerResult;
   if (!(providerProfile.startingCharge > 0))
     throw conflict("Selected provider has not set a starting charge yet.");
   for (let attempt = 0; attempt < 3; attempt += 1) {

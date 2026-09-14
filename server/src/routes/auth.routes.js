@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as authController from "../controllers/auth.controller.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import rateLimit from "express-rate-limit";
+import { env } from "../config/env.js";
 import {
   validateChangePassword,
   validateCustomerRegistration,
@@ -10,17 +11,19 @@ import {
 } from "../validators/auth.validator.js";
 
 const authRouter = Router();
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,
-  skipSuccessfulRequests: true,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: "Too many authentication attempts. Please try again later.",
-  },
-});
+const authLimiter = env.disableRateLimit
+  ? (request, response, next) => next()
+  : rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: 10,
+      skipSuccessfulRequests: true,
+      standardHeaders: "draft-8",
+      legacyHeaders: false,
+      message: {
+        success: false,
+        message: "Too many authentication attempts. Please try again later.",
+      },
+    });
 
 authRouter.post(
   "/register/customer",

@@ -56,4 +56,18 @@ const providerProfileSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+providerProfileSchema.index({
+  categoryIds: 1,
+  approvalStatus: 1,
+  accountStatus: 1,
+  availability: 1,
+  startingCharge: 1,
+});
+providerProfileSchema.index({
+  approvalStatus: 1,
+  accountStatus: 1,
+  availability: 1,
+  startingCharge: 1,
+});
+
 export default mongoose.model("ProviderProfile", providerProfileSchema);
