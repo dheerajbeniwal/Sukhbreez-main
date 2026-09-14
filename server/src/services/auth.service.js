@@ -38,13 +38,18 @@ const signRefreshToken = (user) =>
     { expiresIn: env.jwtRefreshExpiresIn },
   );
 
-export const getRefreshCookieOptions = () => ({
-  httpOnly: true,
-  secure: env.nodeEnv === "production",
-  sameSite: "lax",
-  path: "/api/v1/auth",
-  maxAge: durationToMs(env.jwtRefreshExpiresIn),
-});
+export const getRefreshCookieOptions = () => {
+  const crossSiteClient = env.clientUrl.startsWith("https://");
+  const sameSite = crossSiteClient ? "none" : "lax";
+
+  return {
+    httpOnly: true,
+    secure: sameSite === "none" || env.nodeEnv === "production",
+    sameSite,
+    path: "/api/v1/auth",
+    maxAge: durationToMs(env.jwtRefreshExpiresIn),
+  };
+};
 export { refreshCookie };
 
 const issueTokens = async (user) => {
